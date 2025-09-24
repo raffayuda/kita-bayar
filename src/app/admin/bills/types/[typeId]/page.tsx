@@ -9,7 +9,14 @@ import { ArrowLeft, Plus, Calendar, Users, DollarSign, TrendingUp, ArrowRight } 
 import Link from "next/link"
 
 // Mock data jenis tagihan
-const mockBillTypes = {
+const mockBillTypes: { [key: number]: {
+  id: number;
+  name: string;
+  description: string;
+  baseAmount: number;
+  icon: string;
+  color: string;
+} } = {
   1: {
     id: 1,
     name: "Iuran Bulanan",
@@ -29,7 +36,21 @@ const mockBillTypes = {
 }
 
 // Mock data periode untuk setiap jenis tagihan
-const mockPeriods = {
+type Period = {
+  id: number;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  totalBills: number;
+  paidBills: number;
+  totalAmount: number;
+  paidAmount: number;
+  isActive: boolean;
+  status: string;
+};
+
+const mockPeriods: { [key: number]: Period[] } = {
   1: [ // Iuran Bulanan
     {
       id: 1,
@@ -104,9 +125,26 @@ const mockPeriods = {
 export default function BillTypeDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const billTypeId = parseInt(params.id as string)
+  const billTypeId = parseInt(params.typeId as string)
   const [billType, setBillType] = useState(mockBillTypes[billTypeId])
-  const [periods, setPeriods] = useState(mockPeriods[billTypeId] || [])
+  const [periods, setPeriods] = useState<Period[]>(mockPeriods[billTypeId] || [])
+
+  useEffect(() => {
+    if (!billType) {
+      router.push('/admin/bills')
+    }
+  }, [billType, router])
+
+  if (!billType) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -149,10 +187,10 @@ export default function BillTypeDetailPage() {
     return <div>Jenis tagihan tidak ditemukan</div>
   }
 
-  const totalBills = periods.reduce((acc, p) => acc + p.totalBills, 0)
-  const paidBills = periods.reduce((acc, p) => acc + p.paidBills, 0)
-  const totalAmount = periods.reduce((acc, p) => acc + p.totalAmount, 0)
-  const paidAmount = periods.reduce((acc, p) => acc + p.paidAmount, 0)
+  const totalBills = periods.reduce((acc: number, p: Period) => acc + p.totalBills, 0)
+  const paidBills = periods.reduce((acc: number, p: Period) => acc + p.paidBills, 0)
+  const totalAmount = periods.reduce((acc: number, p: Period) => acc + p.totalAmount, 0)
+  const paidAmount = periods.reduce((acc: number, p: Period) => acc + p.paidAmount, 0)
 
   return (
     <div className="space-y-6">
@@ -174,9 +212,9 @@ export default function BillTypeDetailPage() {
           </div>
         </div>
         <Button asChild>
-          <Link href={`/admin/bills/types/${billTypeId}/periods/new`}>
+          <Link href={`/admin/bills/manage/${billTypeId}`}>
             <Plus className="mr-2 h-4 w-4" />
-            Buat Periode Baru
+            Kelola Periode
           </Link>
         </Button>
       </div>
@@ -191,7 +229,7 @@ export default function BillTypeDetailPage() {
           <CardContent>
             <div className="text-2xl font-bold">{periods.length}</div>
             <p className="text-xs text-muted-foreground">
-              {periods.filter(p => p.isActive).length} aktif
+              {periods.filter((p: Period) => p.isActive).length} aktif
             </p>
           </CardContent>
         </Card>
@@ -246,7 +284,7 @@ export default function BillTypeDetailPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {periods.map((period) => {
+          {periods.map((period: Period) => {
             const completionPercentage = getCompletionPercentage(period.paidBills, period.totalBills)
             const amountPercentage = getCompletionPercentage(period.paidAmount, period.totalAmount)
             
@@ -332,9 +370,11 @@ export default function BillTypeDetailPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">Belum ada periode untuk jenis tagihan ini.</p>
+                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Belum ada periode</h3>
+                <p className="text-gray-500 mb-4">Belum ada periode untuk jenis tagihan {billType.name}. Buat periode pertama untuk mulai mengelola tagihan.</p>
                 <Button asChild>
-                  <Link href={`/admin/bills/types/${billTypeId}/periods/new`}>
+                  <Link href={`/admin/bills/manage/${billTypeId}`}>
                     <Plus className="mr-2 h-4 w-4" />
                     Buat Periode Pertama
                   </Link>

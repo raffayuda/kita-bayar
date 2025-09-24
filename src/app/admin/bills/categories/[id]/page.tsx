@@ -107,7 +107,7 @@ export default function CategoryPeriodsPage() {
           </div>
         </div>
         <Button asChild>
-          <Link href={`/admin/bills/categories/${category.id}/periods/new`}>
+          <Link href={`/admin/bills/types/${category.id}/periods/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Buat Periode Baru
           </Link>
@@ -252,7 +252,7 @@ export default function CategoryPeriodsPage() {
 
                   {/* Action Button */}
                   <Button asChild className="w-full group-hover:bg-primary/90">
-                    <Link href={`/admin/bills/categories/${category.id}/periods/${period.id}`}>
+                    <Link href={`/admin/bills/types/${category.id}/periods/${period.id}`}>
                       Lihat Detail Warga
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
@@ -275,12 +275,12 @@ export default function CategoryPeriodsPage() {
         <CardContent>
           <div className="flex gap-4">
             <Button variant="outline" asChild>
-              <Link href={`/admin/bills/categories/${category.id}/types`}>
-                Kelola Jenis Tagihan
+              <Link href={`/admin/bills/manage/${category.id}`}>
+                Kelola Periode
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href={`/admin/bills/categories/${category.id}/reports`}>
+              <Link href={`/admin/bills/types/${category.id}/reports`}>
                 Laporan Tagihan
               </Link>
             </Button>
