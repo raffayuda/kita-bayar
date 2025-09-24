@@ -1,0 +1,133 @@
+// KitaBayar Billing Schema Backup
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  STAFF
+  RESIDENT
+}
+
+enum BillStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  DIGITAL_WALLET
+  CREDIT_CARD
+}
+
+// Models
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String?  @unique
+  password  String
+  role      UserRole @default(RESIDENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  resident Resident?
+
+  @@map("users")
+}
+
+model Resident {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  fullName    String
+  phoneNumber String?
+  address     String
+  houseNumber String
+  rtRw        String? // RT/RW information
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bills    Bill[]
+  payments Payment[]
+
+  @@map("residents")
+}
+
+model BillType {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  baseAmount  Decimal @db.Decimal(10, 2)
+  isActive    Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  bills Bill[]
+
+  @@map("bill_types")
+}
+
+model Bill {
+  id          String     @id @default(cuid())
+  residentId  String
+  billTypeId  String
+  amount      Decimal    @db.Decimal(10, 2)
+  dueDate     DateTime
+  status      BillStatus @default(PENDING)
+  description String?
+  period      String     // e.g., "2024-01" for monthly bills
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  resident Resident  @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  billType BillType  @relation(fields: [billTypeId], references: [id])
+  payments Payment[]
+
+  @@unique([residentId, billTypeId, period])
+  @@map("bills")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  residentId    String
+  billId        String
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  paidAt        DateTime?
+  receiptNumber String?       @unique
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  bill     Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}

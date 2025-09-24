@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  STAFF
+  RESIDENT
+}
+
+enum BillStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  DIGITAL_WALLET
+  CREDIT_CARD
+}
+
+// Models
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String?  @unique
+  password  String
+  role      UserRole @default(RESIDENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  resident Resident?
+
+  @@map("users")
+}
+
+model Resident {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  fullName    String
+  phoneNumber String?
+  address     String
+  houseNumber String
+  rtRw        String? // RT/RW information
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bills    Bill[]
+  payments Payment[]
+
+  @@map("residents")
+}
+
+model BillCategory {
+  id          String  @id @default(cuid())
+  name        String  @unique // e.g., "Iuran Bulanan", "17 Agustusan"
+  description String?
+  color       String  @default("#3B82F6") // Warna untuk UI
+  icon        String? // Icon untuk UI
+  isActive    Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  billTypes BillType[]
+  periods   BillPeriod[]
+
+  @@map("bill_categories")
+}
+
+model BillType {
+  id          String  @id @default(cuid())
+  categoryId  String
+  name        String  
+  description String?
+  baseAmount  Decimal @db.Decimal(10, 2)
+  isActive    Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  category BillCategory @relation(fields: [categoryId], references: [id])
+  bills    Bill[]
+
+  @@unique([categoryId, name])
+  @@map("bill_types")
+}
+
+model BillPeriod {
+  id          String   @id @default(cuid())
+  categoryId  String
+  name        String   // e.g., "Agustus 2024", "September 2024"
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  category BillCategory @relation(fields: [categoryId], references: [id])
+  bills    Bill[]
+
+  @@unique([categoryId, name])
+  @@map("bill_periods")
+}
+
+model Bill {
+  id           String     @id @default(cuid())
+  residentId   String
+  billTypeId   String
+  periodId     String
+  totalAmount  Decimal    @db.Decimal(10, 2) // Total yang harus dibayar
+  paidAmount   Decimal    @db.Decimal(10, 2) @default(0) // Yang sudah dibayar
+  installments Int        @default(1) // Berapa kali bayar (bulatan)
+  dueDate      DateTime
+  status       BillStatus @default(PENDING)
+  description  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  resident   Resident    @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  billType   BillType    @relation(fields: [billTypeId], references: [id])
+  period     BillPeriod  @relation(fields: [periodId], references: [id])
+  payments   Payment[]
+
+  @@unique([residentId, billTypeId, periodId])
+  @@map("bills")
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  residentId     String
+  billId         String
+  amount         Decimal       @db.Decimal(10, 2)
+  installmentNum Int           @default(1) // Cicilan ke berapa
+  paymentMethod  PaymentMethod
+  status         PaymentStatus @default(PENDING)
+  paidAt         DateTime?
+  receiptNumber  String?       @unique
+  notes          String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  bill     Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
