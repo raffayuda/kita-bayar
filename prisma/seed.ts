@@ -15,7 +15,6 @@ async function main() {
     create: {
       email: 'admin@kitabayar.com',
       password: hashedPassword,
-      username: 'admin',
       role: 'ADMIN',
     },
   })
@@ -174,47 +173,58 @@ async function main() {
     create: {
       email: 'staff@kitabayar.com',
       password: staffPassword,
-      username: 'staff',
       role: 'STAFF',
     },
   })
 
   console.log('✅ Staff user created')
 
-  // Create sample resident
-  const residentPassword = await bcrypt.hash('resident123', 10)
-  const residentUser = await prisma.user.upsert({
-    where: { email: 'resident@gmail.com' },
-    update: {},
-    create: {
-      email: 'resident@gmail.com',
-      password: residentPassword,
-      username: 'warga1',
-      role: 'RESIDENT',
-    },
-  })
+  // Create sample residents
+  const residents = await Promise.all([
+    prisma.resident.upsert({
+      where: { id: 'sample-resident-1' },
+      update: {},
+      create: {
+        id: 'sample-resident-1',
+        fullName: 'Budi Santoso',
+        email: 'budi@gmail.com',
+        phoneNumber: '081234567890',
+        address: 'Jl. Mawar No. 10',
+        identityCard: '3201234567890123',
+        rtRw: 'RT 001/RW 005',
+        kelurahan: 'Sukamaju',
+        kecamatan: 'Cibinong',
+        city: 'Bogor',
+        postalCode: '16913',
+      },
+    }),
+    prisma.resident.upsert({
+      where: { id: 'sample-resident-2' },
+      update: {},
+      create: {
+        id: 'sample-resident-2',
+        fullName: 'Siti Aminah',
+        email: 'siti@gmail.com',
+        phoneNumber: '081234567891',
+        address: 'Jl. Melati No. 15',
+        identityCard: '3201234567890124',
+        rtRw: 'RT 002/RW 005',
+        kelurahan: 'Sukamaju',
+        kecamatan: 'Cibinong',
+        city: 'Bogor',
+        postalCode: '16913',
+      },
+    }),
+  ])
 
-  const resident = await prisma.resident.upsert({
-    where: { userId: residentUser.id },
-    update: {},
-    create: {
-      userId: residentUser.id,
-      fullName: 'Budi Santoso',
-      phoneNumber: '081234567890',
-      address: 'Jl. Mawar No. 10',
-      houseNumber: '10',
-      rtRw: 'RT 001/RW 005',
-    },
-  })
-
-  console.log('✅ Sample resident created')
+  console.log('✅ Sample residents created')
 
   console.log('')
   console.log('🎉 Seed data berhasil dibuat!')
   console.log('Login credentials:')
   console.log('👤 Admin: admin@kitabayar.com / admin123')
-  console.log('👥 Staff: staff@kitabayar.com / staff123') 
-  console.log('🏠 Resident: resident@gmail.com / resident123')
+  console.log('👥 Staff: staff@kitabayar.com / staff123')
+  console.log('🏠 Residents: Data warga sudah dibuat (tanpa akun login)')
 }
 
 main()

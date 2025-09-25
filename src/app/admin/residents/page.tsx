@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Edit, Trash2, Eye, Users, Home, Phone, Mail, ArrowUpDown, Filter } from "lucide-react"
 
 interface Resident {
-  id?: number
+  id?: string
   fullName: string
   email: string
   phoneNumber: string
@@ -55,96 +55,29 @@ export default function ResidentsPage() {
     isActive: true
   })
   
-  // Mock data - akan diganti dengan data dari database
-  const [residents, setResidents] = useState<Resident[]>([
-    {
-      id: 1,
-      fullName: "Budi Santoso",
-      email: "budi.santoso@email.com",
-      address: "Jl. Mawar No. 15",
-      phoneNumber: "081234567890",
-      identityCard: "3201234567890123",
-      rtRw: "001/002",
-      kelurahan: "Sukamaju",
-      kecamatan: "Cibinong",
-      city: "Bogor",
-      postalCode: "16913",
-      isActive: true,
-      createdAt: "2025-01-15"
-    },
-    {
-      id: 2,
-      fullName: "Siti Aminah",
-      email: "siti.aminah@email.com",
-      address: "Jl. Melati No. 22",
-      phoneNumber: "081234567891",
-      identityCard: "3201234567890124",
-      rtRw: "001/002",
-      kelurahan: "Sukamaju",
-      kecamatan: "Cibinong",
-      city: "Bogor",
-      postalCode: "16913",
-      isActive: true,
-      createdAt: "2025-01-16"
-    },
-    {
-      id: 3,
-      fullName: "Ahmad Rahman",
-      email: "ahmad.rahman@email.com",
-      address: "Jl. Anggrek No. 8",
-      phoneNumber: "081234567892",
-      identityCard: "3201234567890125",
-      rtRw: "002/002",
-      kelurahan: "Sukamaju",
-      kecamatan: "Cibinong",
-      city: "Bogor",
-      postalCode: "16913",
-      isActive: false,
-      createdAt: "2025-01-17"
-    },
-    {
-      id: 4,
-      fullName: "Dewi Kartika",
-      email: "dewi.kartika@email.com",
-      address: "Jl. Dahlia No. 33",
-      phoneNumber: "081234567893",
-      identityCard: "3201234567890126",
-      rtRw: "001/003",
-      kelurahan: "Sukamaju",
-      kecamatan: "Cibinong",
-      city: "Bogor",
-      postalCode: "16913",
-      isActive: true,
-      createdAt: "2025-01-18"
-    },
-    {
-      id: 5,
-      fullName: "Andi Wijaya",
-      email: "andi.wijaya@email.com",
-      address: "Jl. Kenanga No. 17",
-      phoneNumber: "081234567894",
-      identityCard: "3201234567890127",
-      rtRw: "002/003",
-      kelurahan: "Sukamaju",
-      kecamatan: "Cibinong",
-      city: "Bogor",
-      postalCode: "16913",
-      isActive: true,
-      createdAt: "2025-01-19"
-    }
-  ])
+  // Data dari database
+  const [residents, setResidents] = useState<Resident[]>([])
 
-  // Fetch residents data (simulated API call)
+  // Fetch residents data dari API
   const fetchResidents = async () => {
     setLoading(true)
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      // In real app, this would be an API call
-      console.log('Residents data loaded')
+      console.log('🔄 Fetching residents from API...')
+      const res = await fetch('/api/residents')
+      console.log('📡 Response status:', res.status)
+      
+      if (!res.ok) {
+        const errorData = await res.text()
+        console.error('❌ API Error:', errorData)
+        throw new Error(`API Error: ${res.status} ${errorData}`)
+      }
+      
+      const data = await res.json()
+      console.log('✅ Residents data received:', data)
+      setResidents(data)
     } catch (error) {
-      console.error('Error fetching residents:', error)
-      toast.error('Gagal memuat data warga')
+      console.error('❌ Error fetching residents:', error)
+      toast.error('Gagal memuat data warga: ' + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       setLoading(false)
     }
@@ -182,34 +115,23 @@ export default function ResidentsPage() {
     currentPage * itemsPerPage
   )
 
-  // Form validation
+  // Form validation - hanya fullName yang wajib
   const validateForm = (data: Resident): Partial<Resident> => {
     const newErrors: Partial<Resident> = {}
     
     if (!data.fullName.trim()) newErrors.fullName = 'Nama lengkap wajib diisi'
-    if (!data.email.trim()) {
-      newErrors.email = 'Email wajib diisi'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    
+    // Optional validations - hanya jika diisi
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       newErrors.email = 'Format email tidak valid'
     }
-    if (!data.phoneNumber.trim()) {
-      newErrors.phoneNumber = 'Nomor HP wajib diisi'
-    } else if (!/^\+?[0-9]{10,15}$/.test(data.phoneNumber.replace(/\s/g, ''))) {
+    if (data.phoneNumber && !/^\+?[0-9]{10,15}$/.test(data.phoneNumber.replace(/\s/g, ''))) {
       newErrors.phoneNumber = 'Format nomor HP tidak valid'
     }
-    if (!data.identityCard.trim()) {
-      newErrors.identityCard = 'Nomor KTP wajib diisi'
-    } else if (!/^[0-9]{16}$/.test(data.identityCard)) {
+    if (data.identityCard && !/^[0-9]{16}$/.test(data.identityCard)) {
       newErrors.identityCard = 'Nomor KTP harus 16 digit'
     }
-    if (!data.address.trim()) newErrors.address = 'Alamat wajib diisi'
-    if (!data.rtRw.trim()) newErrors.rtRw = 'RT/RW wajib diisi'
-    if (!data.kelurahan.trim()) newErrors.kelurahan = 'Kelurahan wajib diisi'
-    if (!data.kecamatan.trim()) newErrors.kecamatan = 'Kecamatan wajib diisi'
-    if (!data.city.trim()) newErrors.city = 'Kota wajib diisi'
-    if (!data.postalCode.trim()) {
-      newErrors.postalCode = 'Kode pos wajib diisi'
-    } else if (!/^[0-9]{5}$/.test(data.postalCode)) {
+    if (data.postalCode && !/^[0-9]{5}$/.test(data.postalCode)) {
       newErrors.postalCode = 'Kode pos harus 5 digit'
     }
     
@@ -265,22 +187,51 @@ export default function ResidentsPage() {
       await new Promise(resolve => setTimeout(resolve, 1000))
       
       if (editingResident) {
-        // Update existing resident
-        setResidents(prev => prev.map(resident => 
-          resident.id === editingResident.id 
-            ? { ...formData, id: editingResident.id, createdAt: resident.createdAt }
-            : resident
-        ))
-        toast.success('Data warga berhasil diperbarui')
-      } else {
-        // Create new resident
-        const newResident: Resident = {
-          ...formData,
-          id: Math.max(...residents.map(r => r.id || 0)) + 1,
-          createdAt: new Date().toISOString().split('T')[0]
+        // Update existing resident via API
+        console.log('🔄 Updating resident:', editingResident.id)
+        const requestData = { ...formData, id: editingResident.id }
+        console.log('📤 Update request data:', requestData)
+        
+        const res = await fetch('/api/residents', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestData)
+        })
+        
+        console.log('📡 Update response status:', res.status)
+        
+        if (!res.ok) {
+          const errorData = await res.text()
+          console.error('❌ Update error:', errorData)
+          throw new Error(`Gagal update data: ${res.status} ${errorData}`)
         }
-        setResidents(prev => [newResident, ...prev])
+        
+        toast.success('Data warga berhasil diperbarui')
+        fetchResidents()
+      } else {
+        // Create new resident via API
+        console.log('🔄 Creating new resident...')
+        console.log('📤 Request data:', formData)
+        
+        const res = await fetch('/api/residents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        })
+        
+        console.log('📡 Create response status:', res.status)
+        
+        if (!res.ok) {
+          const errorData = await res.text()
+          console.error('❌ Create error:', errorData)
+          throw new Error(`Gagal tambah data: ${res.status} ${errorData}`)
+        }
+        
+        const responseData = await res.json()
+        console.log('✅ Created resident:', responseData)
+        
         toast.success('Warga baru berhasil ditambahkan')
+        fetchResidents()
       }
       
       setIsDialogOpen(false)
@@ -294,15 +245,17 @@ export default function ResidentsPage() {
   }
 
   // Delete resident
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus warga ini?')) return
-    
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      setResidents(prev => prev.filter(resident => resident.id !== id))
+      const res = await fetch('/api/residents', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      if (!res.ok) throw new Error('Gagal hapus data')
       toast.success('Warga berhasil dihapus')
+      fetchResidents()
     } catch (error) {
       console.error('Error deleting resident:', error)
       toast.error('Gagal menghapus warga')
@@ -310,14 +263,18 @@ export default function ResidentsPage() {
   }
 
   // Toggle resident status
-  const toggleStatus = async (id: number) => {
+  const toggleStatus = async (id: string) => {
     try {
-      setResidents(prev => prev.map(resident =>
-        resident.id === id 
-          ? { ...resident, isActive: !resident.isActive }
-          : resident
-      ))
+      const resident = residents.find(r => r.id === id)
+      if (!resident) return
+      const res = await fetch('/api/residents', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...resident, isActive: !resident.isActive, id })
+      })
+      if (!res.ok) throw new Error('Gagal update status')
       toast.success('Status warga berhasil diperbarui')
+      fetchResidents()
     } catch (error) {
       console.error('Error updating status:', error)
       toast.error('Gagal memperbarui status')
@@ -572,37 +529,37 @@ export default function ResidentsPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="contoh@email.com"
+                  placeholder="contoh@email.com (opsional)"
                   className={errors.email ? 'border-red-500' : ''}
                 />
                 {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="phoneNumber">Nomor HP *</Label>
+                <Label htmlFor="phoneNumber">Nomor HP</Label>
                 <Input
                   id="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                  placeholder="081234567890"
+                  placeholder="081234567890 (opsional)"
                   className={errors.phoneNumber ? 'border-red-500' : ''}
                 />
                 {errors.phoneNumber && <p className="text-sm text-red-500">{errors.phoneNumber}</p>}
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="identityCard">Nomor KTP *</Label>
+                <Label htmlFor="identityCard">Nomor KTP</Label>
                 <Input
                   id="identityCard"
                   value={formData.identityCard}
                   onChange={(e) => setFormData(prev => ({ ...prev, identityCard: e.target.value }))}
-                  placeholder="16 digit nomor KTP"
+                  placeholder="16 digit nomor KTP (opsional)"
                   maxLength={16}
                   className={errors.identityCard ? 'border-red-500' : ''}
                 />
@@ -615,12 +572,12 @@ export default function ResidentsPage() {
               <h4 className="font-medium text-sm text-gray-900">Informasi Alamat</h4>
               
               <div className="grid gap-2">
-                <Label htmlFor="address">Alamat Lengkap *</Label>
+                <Label htmlFor="address">Alamat Lengkap</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="Jl. Nama Jalan No. XX"
+                  placeholder="Jl. Nama Jalan No. XX (opsional)"
                   rows={3}
                   className={errors.address ? 'border-red-500' : ''}
                 />
@@ -629,24 +586,24 @@ export default function ResidentsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="rtRw">RT/RW *</Label>
+                  <Label htmlFor="rtRw">RT/RW</Label>
                   <Input
                     id="rtRw"
                     value={formData.rtRw}
                     onChange={(e) => setFormData(prev => ({ ...prev, rtRw: e.target.value }))}
-                    placeholder="001/002"
+                    placeholder="001/002 (opsional)"
                     className={errors.rtRw ? 'border-red-500' : ''}
                   />
                   {errors.rtRw && <p className="text-sm text-red-500">{errors.rtRw}</p>}
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="kelurahan">Kelurahan *</Label>
+                  <Label htmlFor="kelurahan">Kelurahan</Label>
                   <Input
                     id="kelurahan"
                     value={formData.kelurahan}
                     onChange={(e) => setFormData(prev => ({ ...prev, kelurahan: e.target.value }))}
-                    placeholder="Nama kelurahan"
+                    placeholder="Nama kelurahan (opsional)"
                     className={errors.kelurahan ? 'border-red-500' : ''}
                   />
                   {errors.kelurahan && <p className="text-sm text-red-500">{errors.kelurahan}</p>}
@@ -655,24 +612,24 @@ export default function ResidentsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="kecamatan">Kecamatan *</Label>
+                  <Label htmlFor="kecamatan">Kecamatan</Label>
                   <Input
                     id="kecamatan"
                     value={formData.kecamatan}
                     onChange={(e) => setFormData(prev => ({ ...prev, kecamatan: e.target.value }))}
-                    placeholder="Nama kecamatan"
+                    placeholder="Nama kecamatan (opsional)"
                     className={errors.kecamatan ? 'border-red-500' : ''}
                   />
                   {errors.kecamatan && <p className="text-sm text-red-500">{errors.kecamatan}</p>}
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="city">Kota *</Label>
+                  <Label htmlFor="city">Kota</Label>
                   <Input
                     id="city"
                     value={formData.city}
                     onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                    placeholder="Nama kota"
+                    placeholder="Nama kota (opsional)"
                     className={errors.city ? 'border-red-500' : ''}
                   />
                   {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
@@ -680,12 +637,12 @@ export default function ResidentsPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="postalCode">Kode Pos *</Label>
+                <Label htmlFor="postalCode">Kode Pos</Label>
                 <Input
                   id="postalCode"
                   value={formData.postalCode}
                   onChange={(e) => setFormData(prev => ({ ...prev, postalCode: e.target.value }))}
-                  placeholder="12345"
+                  placeholder="12345 (opsional)"
                   maxLength={5}
                   className={errors.postalCode ? 'border-red-500' : ''}
                 />
