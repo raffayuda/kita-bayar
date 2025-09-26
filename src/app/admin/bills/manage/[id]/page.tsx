@@ -16,7 +16,7 @@ import { format } from "date-fns"
 import { id } from "date-fns/locale"
 
 // Mock data untuk periode tagihan
-const initialPeriods = [
+const initialPeriods: BillPeriod[] = [
   {
     id: 1,
     name: "Januari 2024",

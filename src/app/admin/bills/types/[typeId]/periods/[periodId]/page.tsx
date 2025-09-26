@@ -317,7 +317,7 @@ export default function PeriodDetailPage() {
                 className="rounded-md border"
                 locale={id}
                 components={{
-                  DayContent: ({ date }) => customDayContent(date)
+                  Day: ({ day }) => customDayContent(day.date)
                 }}
               />
               <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
