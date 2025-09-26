@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,7 @@ interface Resident {
 }
 
 export default function ResidentsPage() {
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingResident, setEditingResident] = useState<Resident | null>(null)
@@ -54,6 +56,10 @@ export default function ResidentsPage() {
     postalCode: "",
     isActive: true
   })
+  
+  // Delete confirmation modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [residentToDelete, setResidentToDelete] = useState<Resident | null>(null)
   
   // Data dari database
   const [residents, setResidents] = useState<Resident[]>([])
@@ -244,18 +250,27 @@ export default function ResidentsPage() {
     }
   }
 
+  // Open delete confirmation modal
+  const openDeleteModal = (resident: Resident) => {
+    setResidentToDelete(resident)
+    setDeleteModalOpen(true)
+  }
+
   // Delete resident
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus warga ini?')) return
+  const handleDelete = async () => {
+    if (!residentToDelete) return
+    
     try {
       const res = await fetch('/api/residents', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id: residentToDelete.id })
       })
       if (!res.ok) throw new Error('Gagal hapus data')
       toast.success('Warga berhasil dihapus')
       fetchResidents()
+      setDeleteModalOpen(false)
+      setResidentToDelete(null)
     } catch (error) {
       console.error('Error deleting resident:', error)
       toast.error('Gagal menghapus warga')
@@ -428,9 +443,7 @@ export default function ResidentsPage() {
                         variant="ghost" 
                         size="sm"
                         title="Lihat detail"
-                        onClick={() => {
-                          toast.info(`Detail warga: ${resident.fullName}`)
-                        }}
+                        onClick={() => router.push(`/admin/residents/${resident.id}`)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -447,7 +460,7 @@ export default function ResidentsPage() {
                         size="sm" 
                         className="text-red-600 hover:text-red-700"
                         title="Hapus warga"
-                        onClick={() => handleDelete(resident.id!)}
+                        onClick={() => openDeleteModal(resident)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -681,6 +694,71 @@ export default function ResidentsPage() {
                   {editingResident ? 'Perbarui' : 'Simpan'}
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Konfirmasi Hapus Warga
+            </DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus warga ini? Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {residentToDelete && (
+            <div className="py-4">
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-700">Nama:</span>
+                  <span className="text-gray-900">{residentToDelete.fullName}</span>
+                </div>
+                {residentToDelete.email && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-700">Email:</span>
+                    <span className="text-gray-900">{residentToDelete.email}</span>
+                  </div>
+                )}
+                {residentToDelete.identityCard && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-700">KTP:</span>
+                    <span className="text-gray-900 font-mono">{residentToDelete.identityCard}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  ⚠️ <strong>Peringatan:</strong> Data warga yang dihapus tidak dapat dikembalikan. 
+                  Pastikan Anda yakin sebelum melanjutkan.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDeleteModalOpen(false)
+                setResidentToDelete(null)
+              }}
+            >
+              Batal
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Ya, Hapus Warga
             </Button>
           </DialogFooter>
         </DialogContent>
